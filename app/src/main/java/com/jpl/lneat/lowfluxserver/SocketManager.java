@@ -1,8 +1,13 @@
 package com.jpl.lneat.lowfluxserver;
 
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.util.Log;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -92,7 +97,7 @@ public class SocketManager extends Thread{
         String message = "";
         int width = 0;
         int height = 0;
-        String[] parts2 = null;
+        Bitmap ret = null;
         try {
             InputStream is          = sock.getInputStream();
             InputStreamReader isr   = new InputStreamReader(is);
@@ -101,16 +106,37 @@ public class SocketManager extends Thread{
             logMes("Message Recived:");
             logMes(message);
             sendConformation();
+
             String[] parts = message.split(":");
             width = Integer.parseInt(parts[0]);
             height = Integer.parseInt(parts[1]);
+            ret =  Bitmap.createBitmap(width,height, Bitmap.Config.ARGB_8888);
+            JSONObject jobj;
             message    = br.readLine();
-            parts2 = message.split(",");
+            try {
+                jobj = new JSONObject(message);
+                JSONArray j1= jobj.getJSONArray("list");
+                JSONArray j2;
+                for(int x = 0; x < width; x++){
+                    j2 = j1.getJSONArray(x);
+                    for(int y = 0; y< height; y++){
+                        ret.setPixel(x,y,Color.argb(255,0,j2.getInt(y),0));
+                    }
+                }
+
+            } catch (JSONException e) {
+                raiseError("Json Error: " +  e.toString());
+            }
+
+
+
+
+
         } catch (IOException e) {
             raiseError("Error in recive Image: " + e.toString());
         }
-        logMes("Message Recived:");
-        logMes(message);
+
+        /*
         int counter = 0;
         Bitmap nextScreen = Bitmap.createBitmap(width,height, Bitmap.Config.ARGB_8888);
         logMes(parts2.length+"");
@@ -120,7 +146,8 @@ public class SocketManager extends Thread{
                 counter ++;
             }
         }
-        return nextScreen;
+        */
+        return ret;
 
 
 
