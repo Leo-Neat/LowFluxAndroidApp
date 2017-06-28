@@ -30,17 +30,21 @@ public class SocketManager extends Thread{
     private final int NEWDATA = 1;
     private final int SUCCESS = 2;
     private final int DISCONNECT = 3;
+    private final int SETTIME = 4;
+
 
     private static final String LOGKEY = "Socket Manager: ";
     private BlockingQueue<Bitmap> myMessengerQueue;
+    private BlockingQueue<Integer[]> myTimeQueue;
     private int PORT;
     private String IP = "127.0.0.1";
     private Socket sock;
 
-    public SocketManager(int port, BlockingQueue mMMQ){
+    public SocketManager(int port, BlockingQueue mMMQ, BlockingQueue time){
         super("SocketManager");
         PORT = port;
         myMessengerQueue = mMMQ;
+        myTimeQueue = time;
     }
 
     private void serverSetup(){
@@ -72,7 +76,12 @@ public class SocketManager extends Thread{
         } catch (IOException e) {
             raiseError("Error reading Message in CheckOpt: " + e.toString());
         }
-        logMes(message);
+        try {
+            logMes(message);
+        }catch(Exception e){
+            raiseError("Python Client has failed, Resetting server ...");
+            run();
+        }
         return Integer.parseInt(message);
     }
 
@@ -153,6 +162,27 @@ public class SocketManager extends Thread{
 
     }
 
+
+    public Integer[] getWaitTime(){
+        Integer[] res = new Integer[2];
+        try {
+            InputStream is          = sock.getInputStream();
+            InputStreamReader isr   = new InputStreamReader(is);
+            BufferedReader br       = new BufferedReader(isr);
+            String strWait = null;
+            strWait = br.readLine();
+            String[] temp = strWait.split(":");
+            res[0] = Integer.parseInt(temp[0]);
+            res[1] = Integer.parseInt(temp[1]);
+            return res;
+        } catch (IOException e) {
+            raiseError("Error in Get Wait time: " + e.toString());
+        }
+        res[0] = 0;
+        res[1] = 0;
+        return res;
+    }
+
     @Override
     public void run() {
         super.run();
@@ -168,7 +198,19 @@ public class SocketManager extends Thread{
                 continue;
             }
             else if(opt == DISCONNECT){
+                try {
+                    sock.close();
+                } catch (IOException e) {
+                    raiseError("Error Closing Socket: " + e.toString());
+                }
                 break;
+            }
+            else if(opt == SETTIME){
+                sendConformation();
+                Integer[] waittime = getWaitTime();
+                logMes("Wait time: "+ waittime[0]+ ' ' + waittime[1]);
+                myTimeQueue.clear();
+                myTimeQueue.add(waittime);
             }
             else{
                 raiseError("Error recived invalid opt code...");

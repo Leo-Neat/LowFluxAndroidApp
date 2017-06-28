@@ -21,6 +21,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int PORT = 6000;
     private ImageView myDisplay;
     private BlockingQueue<Bitmap> myMessengerQueue;
+    private BlockingQueue<Integer[]> myTimeQueue;
     private SocketManager mySocketManager;
     private int xMax;
     private int yMax;
@@ -41,10 +42,15 @@ public class MainActivity extends AppCompatActivity {
         logMes(xMax+"");
         logMes(yMax+"");
 
+        Integer[] empty = new Integer[2];
+        empty[0] = 0;
+        empty[1] = 0;
 
         myMessengerQueue = new LinkedBlockingQueue<>();
-        mySocketManager  = new SocketManager(PORT, myMessengerQueue);
-        myUIThread       = new UIThread(myMessengerQueue,myDisplay);
+        myTimeQueue      = new LinkedBlockingDeque<>();
+        myTimeQueue.add(empty);
+        myUIThread       = new UIThread(myMessengerQueue,myTimeQueue, myDisplay);
+        mySocketManager  = new SocketManager(PORT, myMessengerQueue, myTimeQueue);
         mySocketManager.start();
         myUIThread.start();
     }
