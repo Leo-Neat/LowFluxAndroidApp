@@ -2,7 +2,9 @@ package com.jpl.lneat.lowfluxserver;
 
 
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.util.Base64;
 import android.util.Log;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -154,6 +156,11 @@ public class SocketManager extends Thread{
             JSONObject jobj;
             message    = br.readLine();
             logMes("Message Received");                     // Debug
+            // New Base64 Method, More Resource efficent
+            byte[] temp = Base64.decode(message,Base64.DEFAULT);
+            ret = BitmapFactory.decodeByteArray(temp, 0, temp.length);
+            logMes(ret.getWidth()+ " " + ret.getHeight());
+            /*
             try {                                           // Read the JSON object as a list
                 jobj = new JSONObject(message);
                 JSONArray j1= jobj.getJSONArray("list");
@@ -167,7 +174,7 @@ public class SocketManager extends Thread{
                 logMes("Message Sent To Array");            // Debug
             } catch (JSONException e) {
                 raiseError("Json Error: " +  e.toString());
-            }
+            }*/
         } catch (IOException e) {
             raiseError("Error in recive Image: " + e.toString());
         }
