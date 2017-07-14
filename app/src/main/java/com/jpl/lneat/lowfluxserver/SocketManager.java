@@ -4,8 +4,11 @@ package com.jpl.lneat.lowfluxserver;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Point;
 import android.util.Base64;
 import android.util.Log;
+import android.view.Display;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -40,14 +43,17 @@ import java.util.concurrent.BlockingQueue;
 public class SocketManager extends Thread{
 
     // Opt Codes
-    private final int NEWDATA = 1;
-    private final int SUCCESS = 2;
-    private final int DISCONNECT = 3;
-    private final int SETTIME = 4;
+    private final int NEWDATA       = 1;
+    private final int SUCCESS       = 2;
+    private final int DISCONNECT    = 3;
+    private final int SETTIME       = 4;
+    private final int GETSCREENDIM  = 5;
 
     // Global Constants
     private static final String LOGKEY = "Socket Manager: ";
     private int PORT;
+    private int screenWidth;
+    private int screenHeight;
     private static final String IP = "127.0.0.1";
 
     // Global State variables
@@ -56,12 +62,14 @@ public class SocketManager extends Thread{
     private Socket sock;
 
 
-    public SocketManager(int port, BlockingQueue mMMQ, BlockingQueue time){
+    public SocketManager(int port, BlockingQueue mMMQ, BlockingQueue time, int sW, int sH){
         // This function is used to link the references, allowing for communication between threads.
         super("SocketManager");
         PORT                = port;
         myMessengerQueue    = mMMQ;
         myTimeQueue         = time;
+        screenWidth         = sW;
+        screenHeight        = sH;
     }
 
 
@@ -205,6 +213,21 @@ public class SocketManager extends Thread{
         return res;
     }
 
+    private void sendScreenDim(){
+        try {
+            OutputStream out;
+            DataOutputStream dos;
+            out     = sock.getOutputStream();
+            dos     = new DataOutputStream(out);
+            dos.writeUTF(screenWidth+","+screenHeight);
+            //dos.write(screenHeight);
+            dos.flush();
+        } catch (IOException e) {
+            raiseError("Error in send ScreenDim: "+ e.toString());
+        }
+    }
+
+
 
     @Override
     public void run() {
@@ -233,6 +256,9 @@ public class SocketManager extends Thread{
                 }
                 break;
             }
+            else if(opt == GETSCREENDIM){
+                    sendScreenDim();
+            }
             else if(opt == SETTIME){
                 sendConformation();
                 Integer[] waittime = getWaitTime();             // Set a new delay time
@@ -242,6 +268,13 @@ public class SocketManager extends Thread{
             }
             else{
                 raiseError("Error recived invalid opt code...");
+            }
+        }
+        if(sock.isConnected()){
+            try {
+                sock.close();
+            } catch (IOException e) {
+                raiseError("Error in end of thread RUN: " + e.toString());
             }
         }
         run();                              // Tail recursion

@@ -65,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
         myTimeQueue.add(empty);
         // Create Threads, pass communication references, kick off threads
         myUIThread          = new UIThread(myMessengerQueue, myTimeQueue, myDisplay);
-        mySocketManager     = new SocketManager(PORT, myMessengerQueue, myTimeQueue);
+        mySocketManager     = new SocketManager(PORT, myMessengerQueue, myTimeQueue, xMax, yMax);
         mySocketManager.start();
         myUIThread.start();
     }
