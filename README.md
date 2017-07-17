@@ -1,7 +1,11 @@
 Leo Neat
+
 Jet Propulsion Laboratory
+
 Division 38 Optics
+
 leo.s.neat@jpl.nasa.gov
+
 lneat@ucsc.edu
 
 This application is intended to be used in conjunction with the Python Client application, 
