@@ -8,6 +8,8 @@ leo.s.neat@jpl.nasa.gov
 
 lneat@ucsc.edu
 
+For Setup and Documentation please refer to the PDF in this directory.
+
 This application is intended to be used in conjunction with the Python Client application, 
 another one of my repositories. It is meant to be a control system for an optical testbed 
 that uses an android phone as the image source. This App allows the user to send images
