@@ -1,10 +1,12 @@
 package com.jpl.lneat.lowfluxserver;
 
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Point;
+import android.provider.Settings;
 import android.util.Base64;
 import android.util.Log;
 import android.view.Display;
@@ -48,6 +50,7 @@ public class SocketManager extends Thread{
     private final int DISCONNECT    = 3;
     private final int SETTIME       = 4;
     private final int GETSCREENDIM  = 5;
+    private final int SETBRIGHT     = 6;
 
     // Global Constants
     private static final String LOGKEY = "Socket Manager: ";
@@ -60,9 +63,10 @@ public class SocketManager extends Thread{
     private BlockingQueue<Bitmap> myMessengerQueue;
     private BlockingQueue<Integer[]> myTimeQueue;
     private Socket sock;
+    private Context mContext;
 
 
-    public SocketManager(int port, BlockingQueue mMMQ, BlockingQueue time, int sW, int sH){
+    public SocketManager(int port, BlockingQueue mMMQ, BlockingQueue time, int sW, int sH, Context mC){
         // This function is used to link the references, allowing for communication between threads.
         super("SocketManager");
         PORT                = port;
@@ -70,6 +74,7 @@ public class SocketManager extends Thread{
         myTimeQueue         = time;
         screenWidth         = sW;
         screenHeight        = sH;
+        mContext            = mC;
     }
 
 
@@ -104,10 +109,12 @@ public class SocketManager extends Thread{
 
         String message = "";
         try {
+            logMes("Here");
             InputStream is          = sock.getInputStream();
             InputStreamReader isr   = new InputStreamReader(is);
             BufferedReader br       = new BufferedReader(isr);
             message = br.readLine();
+
         } catch (IOException e) {
             raiseError("Error reading Message in CheckOpt: " + e.toString());
         }
@@ -227,6 +234,32 @@ public class SocketManager extends Thread{
         }
     }
 
+    private void recvBright(){
+        try {
+            logMes("HEre1");
+            sendConformation();
+            logMes("Here2");
+            InputStream is = sock.getInputStream();
+            InputStreamReader isr = new InputStreamReader(is);
+            BufferedReader br = new BufferedReader(isr);
+            String bright = "";
+            int newBright = 0;
+            bright = br.readLine();
+            newBright = Integer.parseInt(bright);
+            sendConformation();
+            if (newBright >= 0 && newBright <= 255) {
+                Settings.System.putInt(mContext.getContentResolver(),
+                        Settings.System.SCREEN_BRIGHTNESS,
+                        newBright);
+                logMes("Brightness Set: " + newBright);
+            } else {
+                logMes("Error: Brightness needs to be between 0 and 255");
+            }
+        }catch(Exception e){
+            raiseError("Error in recvBright: " + e.toString());
+        }
+    }
+
 
 
     @Override
@@ -239,6 +272,7 @@ public class SocketManager extends Thread{
         serverSetup();
         while(sock.isConnected()){
             int opt = checkOpt();
+            logMes("Opt = " + opt);
             if(opt == NEWDATA){
                 sendConformation();
                 Bitmap next = getImage();                       // Get Sent bitmap
@@ -266,6 +300,10 @@ public class SocketManager extends Thread{
                 myTimeQueue.clear();                            // Send the new time to the UIThread
                 myTimeQueue.add(waittime);
             }
+            else if(opt == SETBRIGHT){
+                recvBright();
+
+            }
             else{
                 raiseError("Error recived invalid opt code...");
             }
@@ -277,6 +315,7 @@ public class SocketManager extends Thread{
                 raiseError("Error in end of thread RUN: " + e.toString());
             }
         }
+        logMes("HERE>>>>>>>");
         run();                              // Tail recursion
     }
 

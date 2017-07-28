@@ -1,8 +1,13 @@
 package com.jpl.lneat.lowfluxserver;
 
 
+import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Point;
+import android.net.Uri;
+import android.os.Build;
+import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -43,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
     private UIThread myUIThread;                                // Display Thread
     private int xMax;
     private int yMax;
+    private Context mContext;
 
 
     @Override
@@ -50,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         hideSystemUI();                                         //Turns full screen mode
-
+        settingPermission();
         Display display = getWindowManager().getDefaultDisplay();
         Point size = new Point();
         display.getSize(size);
@@ -62,10 +68,11 @@ public class MainActivity extends AppCompatActivity {
         Integer[] empty     = new Integer[2];                           // Init for time reference
         empty[0]            = 0;
         empty[1]            = 0;
+        mContext            = getApplicationContext();
         myTimeQueue.add(empty);
         // Create Threads, pass communication references, kick off threads
         myUIThread          = new UIThread(myMessengerQueue, myTimeQueue, myDisplay);
-        mySocketManager     = new SocketManager(PORT, myMessengerQueue, myTimeQueue, xMax, yMax);
+        mySocketManager     = new SocketManager(PORT, myMessengerQueue, myTimeQueue, xMax, yMax, mContext);
         mySocketManager.start();
         myUIThread.start();
     }
@@ -98,6 +105,18 @@ public class MainActivity extends AppCompatActivity {
     // Used to raise an Error in the form of an android Log.
     private void raiseError(String eMessage){
         Log.e(LOGKEY, eMessage);
+    }
+
+
+    public void settingPermission() {
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!Settings.System.canWrite(getApplicationContext())) {
+                Intent intent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, Uri.parse("package:" + getPackageName()));
+                startActivityForResult(intent, 200);
+
+            }
+        }
     }
 
 
