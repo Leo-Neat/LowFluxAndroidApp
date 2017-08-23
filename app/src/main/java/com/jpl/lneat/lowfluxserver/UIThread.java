@@ -29,24 +29,16 @@ public class UIThread extends Thread {
 
     // Global State Variables
     private BlockingQueue<Bitmap> myMessengerQueue;
-    private BlockingQueue<Integer[]> myTimeQueue;
     private ImageView   myDisplay;
     private Bitmap currentDisplay = null;
-    private int waitTime;
-    private int showTime;
-    private long nextDisplayTime    = 0;
-    private long oldtime            = 0;
 
 
-    public UIThread(BlockingQueue myMQ, BlockingQueue time, ImageView myDisp){
+    public UIThread(BlockingQueue myMQ, ImageView myDisp){
         super("UIThread");
         logMes("UI Thread Starting up");
         Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
         myMessengerQueue    = myMQ;                 // Linking References
-        myTimeQueue         = time;
         myDisplay           = myDisp;
-        waitTime            = 0;
-        showTime            = 0;
     }
 
 
@@ -58,10 +50,6 @@ public class UIThread extends Thread {
 
         super.run();
         while(true){
-            if(!myTimeQueue.isEmpty() && myTimeQueue.element()[0] != waitTime ){
-                waitTime = myTimeQueue.element()[0];
-                logMes("Wait time Changed to: " + waitTime);    // Debug
-            }
             if(!myMessengerQueue.isEmpty()){
                 try {
                     currentDisplay = myMessengerQueue.take();
@@ -76,40 +64,6 @@ public class UIThread extends Thread {
                         myDisplay.setImageBitmap(tempDisplay);
                     }
                 });
-                // Sets the timing data
-                 nextDisplayTime = System.currentTimeMillis() + waitTime + myTimeQueue.element()[1];
-                logMes(" The next show time is: "+ nextDisplayTime);        // Debug info
-            }else{
-                if(System.currentTimeMillis() > nextDisplayTime){
-                    oldtime = System.currentTimeMillis();
-                    // Set the Display to be visible if the time permits
-                    myDisplay.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            if(!myDisplay.isShown()) {
-                                myDisplay.setVisibility(View.VISIBLE);
-                            }
-                            }
-                    });
-                    try {
-                        currentThread().sleep(myTimeQueue.element()[1]);
-                    } catch (InterruptedException e) {
-                        raiseError("Thread sleep error: " + e.toString());
-                    }
-                    nextDisplayTime = System.currentTimeMillis() + waitTime;
-                }else{
-                    if(waitTime != 0) {
-                        // Set the display to invisible if the time permits
-                        myDisplay.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                if(myDisplay.isShown()) {
-                                    myDisplay.setVisibility(View.INVISIBLE);
-                                }
-                            }
-                        });
-                    }
-                }
             }
         }
     }

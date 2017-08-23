@@ -64,6 +64,7 @@ public class SocketManager extends Thread{
     private BlockingQueue<Integer[]> myTimeQueue;
     private Socket sock;
     private Context mContext;
+    private ServerSocket myServerSocket = null;
 
 
     public SocketManager(int port, BlockingQueue mMMQ, BlockingQueue time, int sW, int sH, Context mC){
@@ -87,7 +88,7 @@ public class SocketManager extends Thread{
         logMes("Port: " + PORT);
         logMes("IP: " + IP);
 
-        ServerSocket myServerSocket = null;
+
         try {
             myServerSocket = new ServerSocket(PORT);                        // Bind Socket to port
         } catch (IOException e) {
@@ -122,6 +123,11 @@ public class SocketManager extends Thread{
             logMes(message);
         }catch(Exception e){
             raiseError("Python Client has failed, Resetting server ...");
+            try {
+                myServerSocket.close();
+            } catch (IOException e1) {
+                raiseError("Error Closing Server Socket: " + e1.toString());
+            }
             run();
         }
         return Integer.parseInt(message);

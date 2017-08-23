@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Display;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.ImageView;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -46,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
     private BlockingQueue<Integer[]> myTimeQueue;               // Time communication link
     private SocketManager mySocketManager;                      // Socket Thread
     private UIThread myUIThread;                                // Display Thread
+    private TimeDelayThread myTimeDelayThread;                  // Timing Thread
     private int xMax;
     private int yMax;
     private Context mContext;
@@ -54,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON | WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON);
         setContentView(R.layout.activity_main);
         hideSystemUI();                                         //Turns full screen mode
         settingPermission();
@@ -71,9 +74,11 @@ public class MainActivity extends AppCompatActivity {
         mContext            = getApplicationContext();
         myTimeQueue.add(empty);
         // Create Threads, pass communication references, kick off threads
-        myUIThread          = new UIThread(myMessengerQueue, myTimeQueue, myDisplay);
+        myUIThread          = new UIThread(myMessengerQueue, myDisplay);
+        myTimeDelayThread   = new TimeDelayThread(myTimeQueue, myDisplay);
         mySocketManager     = new SocketManager(PORT, myMessengerQueue, myTimeQueue, xMax, yMax, mContext);
         mySocketManager.start();
+        myTimeDelayThread.start();
         myUIThread.start();
     }
 
@@ -123,5 +128,16 @@ public class MainActivity extends AppCompatActivity {
     // Used to print output in the form of an android Log.
     private void logMes(String lMes) {
         Log.i(LOGKEY, lMes);
+    }
+
+
+    // Closes a system message if it interupts the android application
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (! hasFocus) {
+            Intent closeDialog = new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
+            sendBroadcast(closeDialog);
+        }
     }
 }
