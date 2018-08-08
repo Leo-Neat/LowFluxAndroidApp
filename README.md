@@ -1,3 +1,5 @@
+This work was performed at the Jet Propulsion Laboratory, California Institute of Technology, under a contract with the National Aeronautics and Space Administration, (C) 2018. All rights reserved. Government sponsorship acknowledged.
+
 Leo Neat
 
 Jet Propulsion Laboratory
